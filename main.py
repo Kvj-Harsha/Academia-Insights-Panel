@@ -6,6 +6,7 @@ import plotly.express as px
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from rich.diagnose import report
 from sklearn.linear_model import LinearRegression
 
 # Function to calculate Grade based on marks
@@ -116,6 +117,7 @@ def plot_attendance_impact(df, subjects):
         st.plotly_chart(fig)
 
 # Streamlit application layout
+
 st.title("Student Performance Analysis")
 st.write("Welcome to the Student Performance Dashboard. Upload your student data in CSV format to begin analysis.")
 
@@ -126,7 +128,7 @@ if csv_file is not None:
     df = load_data(csv_file)
 
     st.write("Choose the type of analysis:")
-    analysis_type = st.selectbox("Select Analysis Type", ["Overall Analysis", "Student-wise Analysis", "Attendance Impact Analysis"])
+    analysis_type = st.selectbox("Select Analysis Type", ["Overall Analysis", "Student-wise Analysis", "Attendance Impact Analysis", "Instructors"])
 
     subjects = ['CS103', 'CS121', 'CS211', 'EE121', 'ID151']
 
@@ -190,15 +192,81 @@ if csv_file is not None:
         # Display top CGPA
         df['CGPA'] = df[subjects].apply(
             lambda row: np.mean([grade_to_cgpa(calculate_grade(row[subject])) for subject in subjects]), axis=1)
+        # Find the student(s) with the highest CGPA
+        highest_cgpa_students = df[df['CGPA'] == df['CGPA'].max()][['STUDENT NAME', 'ROLL NUMBER']]
 
-        highest_cgpa_student = df[df['CGPA'] == df['CGPA'].max()]['STUDENT NAME'].tolist()
+        # Extract student names and roll numbers
+        student_names = highest_cgpa_students['STUDENT NAME'].tolist()
+        roll_numbers = highest_cgpa_students['ROLL NUMBER'].tolist()
+
+        # Combine student names with their roll numbers
+        students_with_roll = [f"{name} (Roll No: {roll})" for name, roll in zip(student_names, roll_numbers)]
 
         with st.container():
             st.markdown(
                 f"<div style='padding: 20px; border-radius: 10px; background-color: #5C00A3; color: white;'>"
-                f"<h4>Highest CGPA: {df['CGPA'].max():.2f} by {', '.join(highest_cgpa_student)}</h4>"
-                f"<p>Instructor: {df['INSTRUCTER'].iloc[0]}</p>"
-                f"</div>", unsafe_allow_html=True)
+                f"<h4>Highest CGPA: {df['CGPA'].max():.2f} by {', '.join(students_with_roll)}</h4>"
+                f"</div>",
+                unsafe_allow_html=True
+            )
+
+        st.title("")
+        # Find the student(s) with the lowest CGPA
+        lowest_cgpa_students = df[df['CGPA'] == df['CGPA'].min()][['STUDENT NAME', 'ROLL NUMBER']]
+
+        # Extract student names and roll numbers
+        student_names_lowest = lowest_cgpa_students['STUDENT NAME'].tolist()
+        roll_numbers_lowest = lowest_cgpa_students['ROLL NUMBER'].tolist()
+
+        # Combine student names with their roll numbers
+        students_with_roll_lowest = [f"{name} (Roll No: {roll})" for name, roll in
+                                     zip(student_names_lowest, roll_numbers_lowest)]
+
+        with st.container():
+            st.markdown(
+                f"<div style='padding: 20px; border-radius: 10px; background-color: #5C00A3; color: white;'>"
+                f"<h4>Lowest CGPA: {df['CGPA'].min():.2f} by {', '.join(students_with_roll_lowest)}</h4>"
+                f"</div>",
+                unsafe_allow_html=True
+            )
+
+        st.write("")
+
+        # Calculate the High, Mean, and Low CGPAs
+        highest_cgpa = df['CGPA'].max()
+        mean_cgpa = df['CGPA'].mean()
+        lowest_cgpa = df['CGPA'].min()
+
+        # Create three columns for side-by-side alignment
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            # High CGPA Box
+            st.markdown(
+                f"<div style='padding: 20px; border-radius: 10px; background-color: #5C00A3; color: white;'>"
+                f"<h4>High CGPA: {highest_cgpa:.2f}</h4>"
+                f"</div>",
+                unsafe_allow_html=True
+            )
+
+        with col2:
+            # Mean CGPA Box
+            st.markdown(
+                f"<div style='padding: 20px; border-radius: 10px; background-color: #00A35C; color: white;'>"
+                f"<h4>Mean CGPA: {mean_cgpa:.2f}</h4>"
+                f"</div>",
+                unsafe_allow_html=True
+            )
+
+        with col3:
+            # Low CGPA Box
+            st.markdown(
+                f"<div style='padding: 20px; border-radius: 10px; background-color: #FF5733; color: white;'>"
+                f"<h4>Low CGPA: {lowest_cgpa:.2f}</h4>"
+                f"</div>",
+                unsafe_allow_html=True
+            )
+
 
     elif analysis_type == "Student-wise Analysis":
         st.subheader("Student-wise Analysis")
@@ -208,13 +276,19 @@ if csv_file is not None:
             student_data = student_analysis(df, student_info)
             if student_data is not None:
                 with st.container():
+                    # Displaying student performance information with an image
+                    # Displaying the student's image and performance details
+
                     st.markdown(
                         f"<div style='padding: 20px; border-radius: 10px; background-color: #5C00A3; color: white;'>"
                         f"<h4>Performance for {student_data['STUDENT NAME']}</h4>"
                         f"<p>Roll Number: {student_data['ROLL NUMBER']}</p>"
-                        f"<p>Instructor: {student_data['INSTRUCTER']}</p>"
+                        f"<p>Contact Number: {student_data['PHONE NO']}</p>"
+                        f"<p>Email ID: {student_data['EMAIL ID']}</p>"
                         f"<p>Attendance: {student_data['ATTENDANCE (%)']}%</p>"
-                        f"</div>", unsafe_allow_html=True)
+                        f"</div>",
+                        unsafe_allow_html=True
+                    )
 
                 # Calculate and display subject scores and grades
                 cols = st.columns(len(subjects))
@@ -235,6 +309,11 @@ if csv_file is not None:
             else:
                 st.write("No student found with the provided information.")
 
+    elif analysis_type == "Instructors":
+        st.write("Check out all the Instructors!")
+        last_four_columns = df.iloc[:, -4:]
+        st.dataframe(last_four_columns)
+
     elif analysis_type == "Attendance Impact Analysis":
         plot_attendance_impact(df, subjects)
 
@@ -246,20 +325,24 @@ if csv_file is not None:
             report_lines.append(f"Overall Class Analysis Report")
             for subject, result in analysis_result.items():
                 report_lines.append(f"{subject}:")
-                report_lines.append(f"    Low Score: {result['low']}")
+                report_lines.append(f"    Least Score: {result['low']}")
                 report_lines.append(f"    Mean Score: {result['mean']} ({result['mean_grade']})")
-                report_lines.append(f"    High Score: {result['high']}")
+                report_lines.append(f"    Higest Score: {result['high']}")
                 report_lines.append(f"    Pass Percentage: {result['pass_percentage']:.2f}%")
                 report_lines.append(f"    Top Scorers: {', '.join(result['top_scorers'])}")
                 report_lines.append(f"    Failed Students: {', '.join(result['failed'])}")
 
             report_lines.append(f"Average Attendance: {attendance_avg:.2f}%")
+            report_lines.append(f"Mean CGPA{mean_cgpa:.2f}")
+            report_lines.append(f"Highest CGPA{highest_cgpa:.2f}")
 
         elif analysis_type == "Student-wise Analysis" and student_data is not None:
             report_lines.append(f"Performance for {student_data['STUDENT NAME']}")
             report_lines.append(f"Roll Number: {student_data['ROLL NUMBER']}")
-            report_lines.append(f"Instructor: {student_data['INSTRUCTER']}")
+            report_lines.append(f"Contact number: {student_data['PHONE NO']}")
+            report_lines.append(f"Email ID: {student_data['EMAIL ID']}")
             report_lines.append(f"Attendance: {student_data['ATTENDANCE (%)']}%")
+            report_lines.append("placeholder for image")
 
             for subject in subjects:
                 score = student_data[subject]
@@ -267,6 +350,12 @@ if csv_file is not None:
                 report_lines.append(f"{subject}: Score = {score}, Grade = {grade}")
 
             report_lines.append(f"Overall CGPA: {cgpa:.2f}")
+            report_lines.append(f"Mean CGPA{mean_cgpa:.2f}")
+            report_lines.append(f"Highest CGPA{highest_cgpa:.2f}")
+
+        elif analysis_type == "Instructors":
+            st.subheader("All instructors")
+
 
         # Generate and provide download link for the PDF
         pdf_buffer = export_pdf(report_lines, "student_report.pdf")
