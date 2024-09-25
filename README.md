@@ -33,18 +33,12 @@ A web-based application that allows users to analyze student performance data, v
    cd student-performance-dashboard
    ```
 
-2. **Create and activate a virtual environment (optional but recommended)**:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-   ```
-
-3. **Install the required dependencies**:
+2. **Install the required dependencies**:
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Run the application**:
+3. **Run the application**:
    ```bash
    streamlit run app.py
    ```
