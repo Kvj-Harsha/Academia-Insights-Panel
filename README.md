@@ -25,12 +25,6 @@ A web-based application that allows users to analyze student performance data, v
    ```bash
    git clone https://github.com/your-username/student-performance-dashboard.git
    cd student-performance-dashboard
-
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/your-username/student-performance-dashboard.git
-   cd student-performance-dashboard
    ```
 
 2. **Install the required dependencies**:
