@@ -6,6 +6,8 @@ import plotly.express as px
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from reportlab.lib import utils
+
 from rich.diagnose import report
 from sklearn.linear_model import LinearRegression
 
@@ -81,40 +83,130 @@ def calculate_student_cgpa(row, subjects):
     return np.mean(subject_grades)
 
 # Export PDF function
-def export_pdf(data, filename):
+def export_pdf(data, filename, image_path=r"C:\Users\harsh\OneDrive\rice cooker\Pictures\Screenshots\iiitr.png"):
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=letter)
     width, height = letter
 
-    # Title
-    pdf.setFont("Helvetica-Bold", 16)
-    pdf.drawString(200, height - 50, "Student Performance Report")
+    # Add page border
+    border_margin = 20  # Set a margin for the border
+    pdf.setLineWidth(1.5)
+    pdf.rect(border_margin, border_margin, width - 2 * border_margin, height - 2 * border_margin)
 
+    # Add image to top center if provided
+    if image_path:
+        try:
+            img = utils.ImageReader(image_path)
+            img_width, img_height = img.getSize()
+            aspect_ratio = img_height / img_width
+
+            # Set a maximum width for the image and adjust the height accordingly
+            max_img_width = 200
+            img_display_width = min(max_img_width, img_width)
+            img_display_height = img_display_width * aspect_ratio
+
+            img_x = (width - img_display_width) / 2
+            img_y = height - 30 - img_display_height  # Keep space from the top for the title
+
+            pdf.drawImage(image_path, img_x, img_y, width=img_display_width, height=img_display_height, preserveAspectRatio=True)
+        except Exception as e:
+            print(f"Error loading image: {e}")
+
+    # Title
+    title_y_position = height - 120  # Increased space between image and title
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.drawString(200, title_y_position, "Student Performance Report")
+
+    # Set font for content
     pdf.setFont("Helvetica", 12)
 
-    y_position = height - 100
+    # Set starting position for content
+    y_position = title_y_position - 40  # Increased space after title
+    line_spacing = 18  # Increased line spacing for more gap between lines
+    max_line_length = 100  # Maximum number of characters per line (for wrapping)
+
     for line in data:
+        # Wrap text if it's too long
+        while len(line) > max_line_length:
+            wrapped_line = line[:max_line_length]
+            pdf.drawString(30, y_position, wrapped_line)
+            line = line[max_line_length:]
+            y_position -= line_spacing
+
+            # Start a new page if we're running out of space
+            if y_position < border_margin + 50:
+                pdf.showPage()
+                pdf.setFont("Helvetica", 12)
+                pdf.setLineWidth(1.5)
+                pdf.rect(border_margin, border_margin, width - 2 * border_margin, height - 2 * border_margin)
+                y_position = height - 50
+
         pdf.drawString(50, y_position, line)
-        y_position -= 20
+        y_position -= line_spacing
+
+        # Start a new page if we're running out of space
+        if y_position < border_margin + 50:
+            pdf.showPage()
+            pdf.setFont("Helvetica", 12)
+            pdf.setLineWidth(1.5)
+            pdf.rect(border_margin, border_margin, width - 2 * border_margin, height - 2 * border_margin)
+            y_position = height - 50
 
     pdf.save()
 
     buffer.seek(0)
     return buffer
 
-# Function to plot attendance impact
 def plot_attendance_impact(df, subjects):
     st.subheader("Impact of Attendance on Performance")
 
-    for subject in subjects:
-        # Filter data for the subject
-        attendance = df['ATTENDANCE (%)']
-        scores = df[subject]
+    # Dropdown to select subject
+    selected_subject = st.selectbox("Select Subject", subjects)
 
-        # Scatter plot with a linear trendline
-        fig = px.scatter(df, x=attendance, y=scores, trendline="ols", title=f'Attendance vs {subject} Scores')
-        fig.update_layout(xaxis_title="Attendance (%)", yaxis_title=f'{subject} Score')
-        st.plotly_chart(fig)
+    # Filter data for the selected subject
+    attendance = df['ATTENDANCE (%)']
+    scores = df[selected_subject]
+
+    # Combined scatter plot with a linear trendline
+    fig = px.scatter(df, x=attendance, y=scores, trendline="ols", title=f'Attendance vs {selected_subject} Scores')
+    fig.update_layout(xaxis_title="Attendance (%)", yaxis_title=f'{selected_subject} Score')
+    st.plotly_chart(fig)
+
+    # Summary comments
+    st.markdown("### Summary")
+
+    # Calculate data-driven insights for summary
+    num_students = len(df)
+
+    # Low Attendance (<50%) vs Low Scores (<60%)
+    low_attendance_students = df[df['ATTENDANCE (%)'] < 50]
+    low_scores_students = df[df[selected_subject] < 60]
+    low_attendance_low_scores = len(low_attendance_students[low_attendance_students[selected_subject] < 60])
+
+    low_attendance_percentage = round((len(low_attendance_students) / num_students) * 100, 2) if len(low_attendance_students) > 0 else 0
+    low_attendance_low_scores_percentage = round((low_attendance_low_scores / num_students) * 100, 2) if num_students > 0 else 0
+
+    # Adding low attendance comment
+    if low_attendance_percentage > 0:
+        st.write(f"{low_attendance_percentage}% of students have attendance below 50%, "
+                 f"and {low_attendance_low_scores_percentage}% of total students have both low attendance and low scores in {selected_subject}.")
+
+    # Attendance Consistency (60-80%) and Average Scores
+    mid_attendance_students = df[(df['ATTENDANCE (%)'] >= 60) & (df['ATTENDANCE (%)'] <= 80)]
+    avg_score_mid_attendance = mid_attendance_students[selected_subject].mean() if len(mid_attendance_students) > 0 else 0
+
+    mid_attendance_percentage = round((len(mid_attendance_students) / num_students) * 100, 2) if num_students > 0 else 0
+
+    # Adding mid attendance comment
+    if mid_attendance_percentage > 0:
+        st.write(f"{mid_attendance_percentage}% of students have attendance between 60-80%, "
+                 f"with an average score of {round(avg_score_mid_attendance, 2)} in {selected_subject}.")
+
+    # Correlation Analysis
+    correlation = df['ATTENDANCE (%)'].corr(df[selected_subject])
+    if abs(correlation) < 0.3:  # Assuming low correlation as threshold < 0.3
+        st.write(f"Attendance does not have a significant correlation with performance in {selected_subject}, with a correlation coefficient of {round(correlation, 2)}.")
+
 
 # Streamlit application layout
 
@@ -160,34 +252,69 @@ if csv_file is not None:
 
         # Adding visual boxes around results
         for subject, result in analysis_result.items():
-            cols = st.columns(3)  # 3 columns in one row
+            cols = st.columns(2)  # 3 columns in one row
+
+            st.markdown(
+                """
+                <style>
+                .neon-card {
+                    padding: 10px; 
+                    margin: 5px; 
+                    border-radius: 10px; 
+                    background-color: #5C00A3; 
+                    color: white; 
+                    box-shadow: 0 0 5px white, 0 0 10px white, 0 0 20px #5C00A3, 0 0 30px #5C00A3;
+                    transition: transform 0.3s, box-shadow 0.3s;
+                }
+                .neon-card:hover {
+                    transform: scale(1.05);
+                    box-shadow: 0 0 10px white, 0 0 20px white, 0 0 30px #5C00A3, 0 0 40px #5C00A3;
+                }
+                </style>
+                """,
+                unsafe_allow_html=True
+            )
 
             with cols[0]:
                 st.markdown(
-                    f"<div style='padding: 10px; margin: 5px; border-radius: 10px; background-color: #5C00A3; color: white;'>"
+                    f"<div class='neon-card'>"
                     f"<h4>{subject}</h4>"
-                    f"<p>Low Score: {result['low']}</p>"
-                    f"<p>Mean Score: {result['mean']} ({result['mean_grade']})</p>"
-                    f"</div>", unsafe_allow_html=True)
+                    f"<p><strong>Low Score:</strong> {result['low']}</p>"
+                    f"<p><strong>Mean Score:</strong> {result['mean']} ({result['mean_grade']})</p>"
+                    f"<p><strong>High Score:</strong> {result['high']}</p>"
+                    f"<p><strong>Pass Percentage:</strong> {result['pass_percentage']:.2f}%</p>"
+                    f"</div>",
+                    unsafe_allow_html=True
+                )
 
             with cols[1]:
                 st.markdown(
-                    f"<div style='padding: 10px; margin: 5px; border-radius: 10px; background-color: #5C00A3; color: white;'>"
-                    f"<p>High Score: {result['high']}</p>"
-                    f"<p>Pass Percentage: {result['pass_percentage']:.2f}%</p>"
-                    f"</div>", unsafe_allow_html=True)
-
-            with cols[2]:
-                st.markdown(
-                    f"<div style='padding: 10px; margin: 5px; border-radius: 10px; background-color: #5C00A3; color: white;'>"
-                    f"<p>Top Scorers: {', '.join(result['top_scorers'])}</p>"
-                    f"<p>Failed Students: {', '.join(result['failed'])}</p>"
-                    f"</div>", unsafe_allow_html=True)
+                    f"<div class='neon-card'>"
+                    f"<p><strong>Top Scorers:</strong> {', '.join(result['top_scorers'])}</p>"
+                    f"<p><strong>Failed Students:</strong> {', '.join(result['failed'])}</p>"
+                    f"</div>",
+                    unsafe_allow_html=True
+                )
 
             # Add a histogram for the subject scores
-            fig_score_dist = go.Figure(data=[go.Histogram(x=df[subject], name='Score Distribution', marker_color='#007bff')])
-            fig_score_dist.update_layout(title=f'{subject} Score Distribution', xaxis_title='Score', yaxis_title='Count', height=300, width=400)
+            fig_score_dist = go.Figure(
+                data=[go.Histogram(x=df[subject], name='Score Distribution', marker_color='#007bff')])
+            fig_score_dist.update_layout(
+                title=f'{subject} Score Distribution',
+                xaxis_title='Score',
+                yaxis_title='Count',
+                height=300,
+                width=400,
+                plot_bgcolor='rgba(0,0,0,0)',  # Transparent background for plot area
+                paper_bgcolor='rgba(0,0,0,0)',  # Transparent background for entire figure
+                margin=dict(l=10, r=10, t=40, b=40),  # Margins around the plot
+                font=dict(color='white')  # Set font color to white
+            )
+
+            # Use a container for the chart to apply the neon border
+            st.markdown("<div class='neon-border'>", unsafe_allow_html=True)
             st.plotly_chart(fig_score_dist, use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
         # Display top CGPA
         df['CGPA'] = df[subjects].apply(
@@ -311,52 +438,70 @@ if csv_file is not None:
 
     elif analysis_type == "Instructors":
         st.write("Check out all the Instructors!")
-        last_four_columns = df.iloc[:, -4:]
+        last_four_columns = df.iloc[:5, -4:]
         st.dataframe(last_four_columns)
 
     elif analysis_type == "Attendance Impact Analysis":
         plot_attendance_impact(df, subjects)
 
     # PDF Export Section
+    # PDF Export Section
     st.subheader("Export to PDF")
-    if st.button("Generate PDF Report"):
-        report_lines = []
-        if analysis_type == "Overall Analysis":
-            report_lines.append(f"Overall Class Analysis Report")
-            for subject, result in analysis_result.items():
-                report_lines.append(f"{subject}:")
-                report_lines.append(f"    Least Score: {result['low']}")
-                report_lines.append(f"    Mean Score: {result['mean']} ({result['mean_grade']})")
-                report_lines.append(f"    Higest Score: {result['high']}")
-                report_lines.append(f"    Pass Percentage: {result['pass_percentage']:.2f}%")
-                report_lines.append(f"    Top Scorers: {', '.join(result['top_scorers'])}")
-                report_lines.append(f"    Failed Students: {', '.join(result['failed'])}")
+if st.button("Generate PDF Report"):
+    report_lines = []
 
-            report_lines.append(f"Average Attendance: {attendance_avg:.2f}%")
-            report_lines.append(f"Mean CGPA{mean_cgpa:.2f}")
-            report_lines.append(f"Highest CGPA{highest_cgpa:.2f}")
+    if analysis_type == "Overall Analysis":
+        report_lines.append("Overall Class Analysis Report")
+        report_lines.append("")  # Double line break after title
 
-        elif analysis_type == "Student-wise Analysis" and student_data is not None:
-            report_lines.append(f"Performance for {student_data['STUDENT NAME']}")
-            report_lines.append(f"Roll Number: {student_data['ROLL NUMBER']}")
-            report_lines.append(f"Contact number: {student_data['PHONE NO']}")
-            report_lines.append(f"Email ID: {student_data['EMAIL ID']}")
-            report_lines.append(f"Attendance: {student_data['ATTENDANCE (%)']}%")
-            report_lines.append("placeholder for image")
+        for subject, result in analysis_result.items():
+            report_lines.append(f"{subject}:")
+            report_lines.append(f"    Least Score: {result['low']}")
+            report_lines.append(f"    Mean Score: {result['mean']} ({result['mean_grade']})")
+            report_lines.append(f"    Highest Score: {result['high']}")
+            report_lines.append(f"    Pass Percentage: {result['pass_percentage']:.2f}%")
+            report_lines.append(f"    Top Scorers: {', '.join(result['top_scorers'])}")
+            report_lines.append(f"    Failed Students: {', '.join(result['failed'])}")
+            report_lines.append("")  # Double line break after each subject section
 
-            for subject in subjects:
-                score = student_data[subject]
-                grade = calculate_grade(score)
-                report_lines.append(f"{subject}: Score = {score}, Grade = {grade}")
+        report_lines.append(f"Average Attendance: {attendance_avg:.2f}%")
+        report_lines.append(f"Mean CGPA: {mean_cgpa:.2f}")
+        report_lines.append(f"Highest CGPA: {highest_cgpa:.2f}")
+        report_lines.append("")  # Double line break at the end of the report
 
-            report_lines.append(f"Overall CGPA: {cgpa:.2f}")
-            report_lines.append(f"Mean CGPA{mean_cgpa:.2f}")
-            report_lines.append(f"Highest CGPA{highest_cgpa:.2f}")
+        pdf_file_name = "overall_analysis.pdf"
 
-        elif analysis_type == "Instructors":
-            st.subheader("All instructors")
+    elif analysis_type == "Student-wise Analysis" and student_data is not None:
+        report_lines.append(f"Performance for {student_data['STUDENT NAME']}")
+        report_lines.append(f"Roll Number: {student_data['ROLL NUMBER']}")
+        report_lines.append(f"Contact number: {student_data['PHONE NO']}")
+        report_lines.append(f"Email ID: {student_data['EMAIL ID']}")
+        report_lines.append(f"Attendance: {student_data['ATTENDANCE (%)']}%")
+        report_lines.append("")  # Double line break after student details
 
+        for subject in subjects:
+            score = student_data[subject]
+            grade = calculate_grade(score)
+            report_lines.append(f"{subject}: Score = {score}, Grade = {grade}")
+            report_lines.append("")  # Double line break after each subject score
 
-        # Generate and provide download link for the PDF
-        pdf_buffer = export_pdf(report_lines, "student_report.pdf")
-        st.download_button(label="Download PDF", data=pdf_buffer, file_name="student_report.pdf", mime="application/pdf")
+        report_lines.append(f"CGPA: {cgpa:.2f}")
+        report_lines.append("")  # Double line break after CGPA
+        pdf_file_name = f"{student_data['ROLL NUMBER']}.pdf"
+
+    elif analysis_type == "Instructors":
+        report_lines.append("Instructors List:")
+        report_lines.append("")  # Double line break after title
+
+        for index, row in last_four_columns.iterrows():
+            report_lines.append(f"Instructor {index + 1}:")
+            for col in last_four_columns.columns:
+                report_lines.append(f"    {col}: {row[col]}")
+            report_lines.append("")  # Double line break after each instructor
+
+        pdf_file_name = "educators.pdf"
+
+    # Generate and provide download link for the PDF
+    pdf_buffer = export_pdf(report_lines, pdf_file_name,
+                            image_path=r"C:\Users\harsh\OneDrive\rice cooker\Pictures\Screenshots\iiitr.png")
+    st.download_button(label="Download PDF", data=pdf_buffer, file_name=pdf_file_name, mime="application/pdf")
