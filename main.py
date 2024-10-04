@@ -501,6 +501,15 @@ if st.button("Generate PDF Report"):
 
         pdf_file_name = "educators.pdf"
 
+    elif analysis_type == "Attendance Impact Analysis":
+        report_lines.append("Attendance Impact Analysis Report")
+        report_lines.append(f"Subject: ")
+        report_lines.append(f"Low Attendance: % of students")
+        report_lines.append(f"Low Scores: % of students")
+        report_lines.append(f"Correlation Coefficient: ")
+
+        pdf_file_name = "attendence.pdf"
+
     # Generate and provide download link for the PDF
     pdf_buffer = export_pdf(report_lines, pdf_file_name,
                             image_path=r"C:\Users\harsh\OneDrive\rice cooker\Pictures\Screenshots\iiitr.png")
