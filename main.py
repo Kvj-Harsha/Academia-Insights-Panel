@@ -514,3 +514,5 @@ if st.button("Generate PDF Report"):
     pdf_buffer = export_pdf(report_lines, pdf_file_name,
                             image_path=r"C:\Users\harsh\OneDrive\rice cooker\Pictures\Screenshots\iiitr.png")
     st.download_button(label="Download PDF", data=pdf_buffer, file_name=pdf_file_name, mime="application/pdf")
+
+
