@@ -1,4 +1,4 @@
-# 🎓 Student Performance Dashboard
+# 🎓 Academia Insights Panel
 
 A web-based application that allows users to analyze student performance data, visualize statistics, and generate personalized reports. This dashboard provides insights into student grades, CGPA, attendance impact on performance, and more, using interactive charts and visualizations.
 
