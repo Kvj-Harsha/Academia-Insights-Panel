@@ -8,9 +8,6 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib import utils
 
-from rich.diagnose import report
-from sklearn.linear_model import LinearRegression
-
 # Function to calculate Grade based on marks
 def calculate_grade(marks):
     if marks >= 90:
@@ -210,7 +207,7 @@ def plot_attendance_impact(df, subjects):
 
 # Streamlit application layout
 
-st.title("Student Performance Analysis")
+st.title("Academia Insights Panel")
 st.write("Welcome to the Student Performance Dashboard. Upload your student data in CSV format to begin analysis.")
 
 # Upload CSV
@@ -269,6 +266,32 @@ if csv_file is not None:
                 .neon-card:hover {
                     transform: scale(1.05);
                     box-shadow: 0 0 10px white, 0 0 20px white, 0 0 30px #5C00A3, 0 0 40px #5C00A3;
+                }
+                .neon-card2{
+                    padding: 10px; 
+                    margin: 5px; 
+                    border-radius: 10px; 
+                    background-color: #097969; 
+                    color: white; 
+                    box-shadow: 0 0 5px white, 0 0 10px white, 0 0 20px #097969, 0 0 30px #097969;
+                    transition: transform 0.3s, box-shadow 0.3s;
+                }
+                .neon-card2:hover {
+                    transform: scale(1.05);
+                    box-shadow: 0 0 10px white, 0 0 20px white, 0 0 30px #097969, 0 0 40px #097969;
+                }
+                .neon-card3{
+                    padding: 10px; 
+                    margin: 5px; 
+                    border-radius: 10px; 
+                    background-color: #ff5733; 
+                    color: white; 
+                    box-shadow: 0 0 5px white, 0 0 10px white, 0 0 20px #097969, 0 0 30px #ff5733;
+                    transition: transform 0.3s, box-shadow 0.3s;
+                }
+                .neon-card3:hover {
+                    transform: scale(1.05);
+                    box-shadow: 0 0 10px white, 0 0 20px white, 0 0 30px #ff5733, 0 0 40px #ff5733;
                 }
                 </style>
                 """,
@@ -331,13 +354,12 @@ if csv_file is not None:
 
         with st.container():
             st.markdown(
-                f"<div style='padding: 20px; border-radius: 10px; background-color: #5C00A3; color: white;'>"
+                f"<div class='neon-card'>"
                 f"<h4>Highest CGPA: {df['CGPA'].max():.2f} by {', '.join(students_with_roll)}</h4>"
                 f"</div>",
                 unsafe_allow_html=True
             )
 
-        st.title("")
         # Find the student(s) with the lowest CGPA
         lowest_cgpa_students = df[df['CGPA'] == df['CGPA'].min()][['STUDENT NAME', 'ROLL NUMBER']]
 
@@ -351,7 +373,7 @@ if csv_file is not None:
 
         with st.container():
             st.markdown(
-                f"<div style='padding: 20px; border-radius: 10px; background-color: #5C00A3; color: white;'>"
+                 f"<div class='neon-card'>"
                 f"<h4>Lowest CGPA: {df['CGPA'].min():.2f} by {', '.join(students_with_roll_lowest)}</h4>"
                 f"</div>",
                 unsafe_allow_html=True
@@ -370,7 +392,7 @@ if csv_file is not None:
         with col1:
             # High CGPA Box
             st.markdown(
-                f"<div style='padding: 20px; border-radius: 10px; background-color: #5C00A3; color: white;'>"
+                 f"<div class='neon-card'>"
                 f"<h4>High CGPA: {highest_cgpa:.2f}</h4>"
                 f"</div>",
                 unsafe_allow_html=True
@@ -379,8 +401,8 @@ if csv_file is not None:
         with col2:
             # Mean CGPA Box
             st.markdown(
-                f"<div style='padding: 20px; border-radius: 10px; background-color: #00A35C; color: white;'>"
-                f"<h4>Mean CGPA: {mean_cgpa:.2f}</h4>"
+                f"<div class='neon-card2'>"
+                f"<h4>Mean GPA: {mean_cgpa:.2f}</h4>"
                 f"</div>",
                 unsafe_allow_html=True
             )
@@ -388,7 +410,7 @@ if csv_file is not None:
         with col3:
             # Low CGPA Box
             st.markdown(
-                f"<div style='padding: 20px; border-radius: 10px; background-color: #FF5733; color: white;'>"
+                f"<div class='neon-card3'>"
                 f"<h4>Low CGPA: {lowest_cgpa:.2f}</h4>"
                 f"</div>",
                 unsafe_allow_html=True
@@ -514,5 +536,3 @@ if st.button("Generate PDF Report"):
     pdf_buffer = export_pdf(report_lines, pdf_file_name,
                             image_path=r"C:\Users\harsh\OneDrive\rice cooker\Pictures\Screenshots\iiitr.png")
     st.download_button(label="Download PDF", data=pdf_buffer, file_name=pdf_file_name, mime="application/pdf")
-
-
