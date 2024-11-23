@@ -1,6 +1,9 @@
+
 # 🎓 Academia Insights Panel
 
 A web-based application that allows users to analyze student performance data, visualize statistics, and generate personalized reports. This dashboard provides insights into student grades, CGPA, attendance impact on performance, and more, using interactive charts and visualizations.
+
+---
 
 ## ✨ Features
 
@@ -10,6 +13,8 @@ A web-based application that allows users to analyze student performance data, v
 - **📈 Attendance Impact Analysis**: Visualize the correlation between student attendance and performance using scatter plots with trendlines.
 - **📝 PDF Report Export**: Generate and download a detailed PDF report based on the analysis.
 
+---
+
 ## 🛠 Tech Stack
 
 - **🐍 Python**: The main programming language used for logic and data processing.
@@ -18,6 +23,8 @@ A web-based application that allows users to analyze student performance data, v
 - **📊 Plotly**: For interactive charts and visualizations.
 - **📄 ReportLab**: For generating PDF reports.
 - **📉 scikit-learn**: For linear regression in attendance impact analysis.
+
+---
 
 ## 📦 Installation
 
@@ -37,6 +44,8 @@ A web-based application that allows users to analyze student performance data, v
    streamlit run app.py
    ```
 
+---
+
 ## 💻 Usage
 
 1. **Upload CSV File**: Upload a CSV file with the following structure:
@@ -46,9 +55,19 @@ A web-based application that allows users to analyze student performance data, v
 2. **Select Analysis Type**: Choose between `Overall Analysis`, `Student-Wise Analysis`, or `Attendance Impact Analysis`.
 3. **Generate Reports**: After analysis, you can generate a PDF report of the results.
 
+---
+
 ### 📝 CSV Format Example
 
 ```csv
 ROLL NUMBER, STUDENT NAME, CS103, CS121, CS211, EE121, ID151, ATTENDANCE (%)
 101, John Doe, 85, 90, 78, 88, 92, 95
 ```
+
+---
+
+## ⭐ Acknowledgments
+
+If you find this project helpful:
+- Please give proper **credits** when using or referencing it.
+- Don't forget to **star this repository** and **fork** it to make it your own!
