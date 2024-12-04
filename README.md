@@ -5,7 +5,7 @@ A web-based application that allows users to analyze student performance data, v
 
 ---
 
-## ✨ Features.
+## ✨ Features
 
 - **📂 Upload CSV for Analysis**: Upload a CSV file containing student data (name, roll number, marks, attendance).
 - **📊 Overall Class Analysis**: Get subject-wise analysis, including low, high, and average scores, pass percentages, and top scorers.
